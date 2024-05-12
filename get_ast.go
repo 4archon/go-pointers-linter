@@ -27,16 +27,31 @@ func tokenDir(scandir string, fset *token.FileSet) error {
 	return nil
 }
 
-func analize(node ast.Node) bool {
+type list []string
+
+func (l *list) analize(node ast.Node) bool {
 	var name string;
 	switch x := node.(type) {
 	case *ast.FuncDecl:
 		name = x.Name.Name
 	}
 	if name != "" {
-		fmt.Println(name)
+		*l = append(*l, name)
 	}
 	return true
+}
+
+type varProg struct {
+	name string
+	typeVar string
+	value string
+	pos string
+}
+
+type storage map[string]map[string][]varProg
+
+func (store *storage) storeVar(node *ast.Node) bool {
+	
 }
 
 func main() {
@@ -58,7 +73,9 @@ func main() {
 	if astPrint == "ast" {
 		ast.Fprint(os.Stdout, fset, node, nil)
 	} else if astPrint == "anl" {
-		ast.Inspect(node["main"], analize)
+		var l list
+		ast.Inspect(node["main"], l.analize)
+		fmt.Println(l)
 	}
 
 }
