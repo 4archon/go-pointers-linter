@@ -27,20 +27,23 @@ func tokenDir(scandir string, fset *token.FileSet) error {
 	return nil
 }
 
-type varProg struct {
-	name string
+type varPointer struct {
+	name    string
 	typeVar string
-	value *int
+	value   string
+	pos     token.Pos
+}
+
+type derefPointer struct {
+	varName string
 	pos token.Pos
 }
 
-// func getLine(fset token.FileSet, pos token.Pos) int {
-	
-// }
+type derefStorage map[string][]derefPointer
 
-type storage map[string]map[string][]varProg
+type storage map[string]map[string][]varPointer
 
-func getType(node *ast.StarExpr) (string) {
+func getType(node *ast.StarExpr) string {
 	switch x := node.X.(type) {
 	case *ast.Ident:
 		return "*" + x.Name
@@ -48,40 +51,40 @@ func getType(node *ast.StarExpr) (string) {
 	return ""
 }
 
-func (store *storage) analizeDeclStmt(node *ast.GenDecl, funcName string) {
+func (store storage) analizeGenDeclStmt(node *ast.GenDecl, funcName string) {
 	for _, i := range node.Specs {
 		switch x := i.(type) {
 		case *ast.ValueSpec:
 			switch y := x.Type.(type) {
 			case *ast.StarExpr:
-				var s varProg
+				var s varPointer
 				s.name = x.Names[0].Name
 				s.typeVar = getType(y)
 				s.pos = x.Names[0].NamePos
-				s.value = nil
-				(*store)[funcName][x.Names[0].Name] = append((*store)[funcName][x.Names[0].Name], s)
+				s.value = "nil"
+				store[funcName][x.Names[0].Name] = append(store[funcName][x.Names[0].Name], s)
 			}
 		}
 	}
 }
 
-func (store *storage) analizeFuncBody(node *ast.BlockStmt, funcName string) {
-	(*store)[funcName] = make(map[string][]varProg)
+func (store storage) analizeFuncBody(node *ast.BlockStmt, funcName string) {
+	store[funcName] = make(map[string][]varPointer)
 	for _, i := range node.List {
 		switch x := i.(type) {
 		case *ast.DeclStmt:
 			switch y := x.Decl.(type) {
 			case *ast.GenDecl:
-				store.analizeDeclStmt(y, funcName)
+				store.analizeGenDeclStmt(y, funcName)
 			}
 		}
 	}
 }
 
-func (store *storage) storeVar(node ast.Node) bool {
+func (store storage) storeVar(node ast.Node) bool {
 	switch x := node.(type) {
 	case *ast.FuncDecl:
-		(*store).analizeFuncBody(x.Body, x.Name.Name)
+		store.analizeFuncBody(x.Body, x.Name.Name)
 	}
 	return true
 }
@@ -107,14 +110,13 @@ func (store storage) printStore(fset *token.FileSet) {
 // func ge
 
 func main() {
-	var astPrint string;
+	var astPrint string
 	if len(os.Args) == 2 {
 		astPrint = os.Args[1]
 	}
 
 	var scandir string = "tests/"
 	fset := token.NewFileSet()
-
 
 	node, err := parser.ParseDir(fset, scandir, nil, 0)
 	if err != nil {
