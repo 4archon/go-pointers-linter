@@ -78,7 +78,7 @@ func (store *storage) analizeFuncBody(node *ast.BlockStmt, funcName string) {
 	}
 }
 
-func (store *storage) storeVar(node ast.Node) bool {
+func (store *storage) findFunctions(node ast.Node) bool {
 	switch x := node.(type) {
 	case *ast.FuncDecl:
 		(*store).analizeFuncBody(x.Body, x.Name.Name)
@@ -126,7 +126,7 @@ func main() {
 		ast.Fprint(os.Stdout, fset, node, nil)
 	} else if astPrint == "anl" {
 		s := make(storage)
-		ast.Inspect(node["main"], s.storeVar)
+		ast.Inspect(node["main"], s.findFunctions)
 		// fmt.Println(s["main"]["i2"][0].)
 		s.printStore(fset)
 	}
