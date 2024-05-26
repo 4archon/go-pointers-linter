@@ -9,46 +9,50 @@ import (
 	"os"
 )
 
-func getType(node *ast.StarExpr) (string) {
-	switch x := node.X.(type) {
-	case *ast.Ident:
-		return "*" + x.Name
-	}
-	return ""
-}
-
-func (store storage) analizeDeclStmt(node *ast.GenDecl, funcName string) {
+func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage) {
 	for _, i := range node.Specs {
 		switch x := i.(type) {
 		case *ast.ValueSpec:
 			switch y := x.Type.(type) {
 			case *ast.StarExpr:
-				var s varProg
-				s.name = x.Names[0].Name
-				s.typeVar = getType(y)
-				s.pos = x.Names[0].NamePos
-				s.value = nil
-				store[funcName][x.Names[0].Name] = append(store[funcName][x.Names[0].Name], s)
+				store.addStarExpr(x, y, funcName)
 			}
 		}
 	}
 }
 
-func (store storage) analizeFuncBody(node *ast.BlockStmt, funcName string) {
-	store[funcName] = make(map[string][]varProg)
+func analizeAssignStmt(node *ast.AssignStmt, funcName string, store storage) {
+	for _, i := range node.Rhs {
+		switch x := i.(type) {
+		case *ast.UnaryExpr:
+			if x.Op.String() == "&" {
+				
+			}
+		case *ast.Ident:
+
+		}
+	}
+}
+
+func analizeFuncBody(node *ast.BlockStmt, funcName string, store storage) {
+	store.init2lvl(funcName)
 	for _, i := range node.List {
 		switch x := i.(type) {
 		case *ast.DeclStmt:
 			switch y := x.Decl.(type) {
 			case *ast.GenDecl:
-				store.analizeDeclStmt(y, funcName)
+				analizeDeclStmt(y, funcName, store)
 			}
+		case *ast.AssignStmt:
+
 		}
 	}
 }
 
-func getLine(fset *token.FileSet, pos token.Pos) int {
-	return fset.Position(pos).Line
+func analizeFunc(funcStore funcStorage, store storage) {
+	for _, i := range(funcStore) {
+		analizeFuncBody(i.Body, i.Name.Name, store)
+	}
 }
 
 
@@ -72,7 +76,8 @@ func main() {
 		ast.Fprint(os.Stdout, fset, node, nil)
 	} else if astPrint == "anl" {
 		var funcStore funcStorage
-		s := make(storage)
+		var s storage
+		s.init()
 		ast.Inspect(node["main"], funcStore.findFunctions)
 		analizeFunc(funcStore, s)
 		s.printStore(fset)

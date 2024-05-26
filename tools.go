@@ -26,3 +26,7 @@ func tokenDir(scandir string, fset *token.FileSet) error {
 	}
 	return nil
 }
+
+func getLine(fset *token.FileSet, pos token.Pos) int {
+	return fset.Position(pos).Line
+}

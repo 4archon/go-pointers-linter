@@ -19,9 +19,3 @@ func (store *funcStorage)findFunctions(node ast.Node) bool {
 	}
 	return true
 }
-
-func analizeFunc(funcStore funcStorage, store storage) {
-	for _, i := range(funcStore) {
-		store.analizeFuncBody(i.Body, i.Name.Name)
-	}
-}
