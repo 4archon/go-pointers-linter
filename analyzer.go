@@ -9,27 +9,94 @@ import (
 	"os"
 )
 
+func getType(node *ast.StarExpr) (string) {
+	switch x := node.X.(type) {
+	case *ast.Ident:
+		return "*" + x.Name
+	}
+	return ""
+}
+
+func analizeValueSpec(node *ast.Ident, expr *ast.StarExpr, funcName string, store storage) {
+	name := node.Name
+	typeVar := getType(expr)
+	value := "nil"
+	pos := node.NamePos
+
+	store.addNewVar(funcName, name, typeVar, value, pos)
+}
+
 func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage) {
 	for _, i := range node.Specs {
 		switch x := i.(type) {
 		case *ast.ValueSpec:
-			switch y := x.Type.(type) {
-			case *ast.StarExpr:
-				store.addStarExpr(x, y, funcName)
+			if x.Values == nil {
+				switch y := x.Type.(type) {
+				case *ast.StarExpr:
+					for _, j := range x.Names {
+						analizeValueSpec(j, y, funcName, store)
+					}
+				}
+			} else {
+				
+				//add assign stmt
 			}
 		}
 	}
 }
 
+func getIdentName(node ast.Expr) string {
+	var res string
+	switch x := node.(type) {
+	case *ast.Ident:
+		res = x.Name
+	}
+	return res
+}
+
+func getIdentPos(node ast.Expr) token.Pos {
+	var res token.Pos
+	switch x := node.(type) {
+	case *ast.Ident:
+		res = x.NamePos
+	}
+	return res
+}
+
 func analizeAssignStmt(node *ast.AssignStmt, funcName string, store storage) {
-	for _, i := range node.Rhs {
+	for j, i := range node.Rhs {
+		lVarPos := getIdentPos(node.Lhs[j])
+		lVarName := getIdentName(node.Lhs[j])
+		rVarName := getIdentName(i)
 		switch x := i.(type) {
 		case *ast.UnaryExpr:
-			if x.Op.String() == "&" {
-				
+			if node.Tok.String() == "=" {
+				if x.Op.String() == "&" {
+					if store[funcName][lVarName].typeVar[0] == '*' {
+						store.addNewValue(funcName, lVarName, "valid", lVarPos)
+					}
+				}
+			} else if node.Tok.String() == ":=" {
+				if x.Op.String() == "&" {
+					//add pointer type
+					store.addNewVar(funcName, lVarName, "*?", "valid", lVarPos)
+				}
 			}
 		case *ast.Ident:
-
+			if node.Tok.String() == "=" {
+				if store[funcName][lVarName].typeVar[0] == '*' {
+					value := store.getLastValue(funcName, x.Name)
+					store.addNewValue(funcName, lVarName, value, lVarPos)
+				}
+			} else if node.Tok.String() == ":=" {
+				_, keyIsValid := store[funcName][rVarName]
+				if keyIsValid {
+					value := store.getLastValue(funcName, rVarName)
+					typeVar := store.getVarType(funcName, rVarName)
+					store.addNewVar(funcName, lVarName, typeVar, value, lVarPos)
+				}
+			}
+			
 		}
 	}
 }
@@ -44,7 +111,7 @@ func analizeFuncBody(node *ast.BlockStmt, funcName string, store storage) {
 				analizeDeclStmt(y, funcName, store)
 			}
 		case *ast.AssignStmt:
-
+			analizeAssignStmt(x, funcName, store)
 		}
 	}
 }
