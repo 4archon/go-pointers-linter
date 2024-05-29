@@ -17,7 +17,7 @@ func getType(node *ast.StarExpr) (string) {
 	return ""
 }
 
-func analizeValueSpec(node *ast.Ident, expr *ast.StarExpr, funcName string, store storage, val string) {
+func analizeSpec(node *ast.Ident, expr *ast.StarExpr, funcName string, store storage, val string) {
 	name := node.Name
 	typeVar := getType(expr)
 	value := val
@@ -35,11 +35,21 @@ func analizeSpecValues(node *ast.Ident, expr ast.Expr, typeExpr *ast.StarExpr, f
 		}
 	case *ast.Ident:
 		value = store.getLastValue(funcName, x.Name)
+	case *ast.CallExpr:
+		value = "func"
 	}
-	analizeValueSpec(node, typeExpr, funcName, store, value)
+	analizeSpec(node, typeExpr, funcName, store, value)
 }
 
-func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage) {
+func getFuncNameCallExpr(node *ast.CallExpr) string {
+	switch x := node.Fun.(type) {
+	case *ast.Ident:
+		return x.Name
+	}
+	return ""
+}
+
+func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage, ret funcReturns) {
 	for _, i := range node.Specs {
 		switch x := i.(type) {
 		case *ast.ValueSpec:
@@ -47,15 +57,29 @@ func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage) {
 				switch y := x.Type.(type) {
 				case *ast.StarExpr:
 					for _, j := range x.Names {
-						analizeValueSpec(j, y, funcName, store, "nil")
+						analizeSpec(j, y, funcName, store, "nil")
 					}
 				}
 			} else {
 				//add assign stmt
 				switch y := x.Type.(type) {
 				case *ast.StarExpr:
-					for z, j := range x.Names {
-						analizeSpecValues(j, x.Values[z], y, funcName, store)
+					if len(x.Names) == len(x.Values) {
+						for z, j := range x.Names {
+							analizeSpecValues(j, x.Values[z], y, funcName, store)
+						}
+					} else {
+						if len(x.Values) == 1 {
+							switch w := x.Values[0].(type) {
+							case *ast.CallExpr:
+								name := getFuncNameCallExpr(w)
+								if len(ret[name]) == len(x.Names) {
+									for _, j := range x.Names {
+										analizeSpec(j, y, funcName, store, "func")
+									}
+								}
+							}
+						}
 					}
 				}
 			}
@@ -119,14 +143,14 @@ func analizeAssignStmt(node *ast.AssignStmt, funcName string, store storage) {
 	}
 }
 
-func analizeFuncBody(node *ast.BlockStmt, funcName string, store storage) {
+func analizeFuncBody(node *ast.BlockStmt, funcName string, store storage, ret funcReturns) {
 	store.init2lvl(funcName)
 	for _, i := range node.List {
 		switch x := i.(type) {
 		case *ast.DeclStmt:
 			switch y := x.Decl.(type) {
 			case *ast.GenDecl:
-				analizeDeclStmt(y, funcName, store)
+				analizeDeclStmt(y, funcName, store, ret)
 			}
 		case *ast.AssignStmt:
 			analizeAssignStmt(x, funcName, store)
@@ -134,9 +158,9 @@ func analizeFuncBody(node *ast.BlockStmt, funcName string, store storage) {
 	}
 }
 
-func analizeFunc(funcStore funcStorage, store storage) {
+func analizeFunc(funcStore funcStorage, store storage, ret funcReturns) {
 	for _, i := range(funcStore) {
-		analizeFuncBody(i.Body, i.Name.Name, store)
+		analizeFuncBody(i.Body, i.Name.Name, store, ret)
 	}
 }
 
@@ -164,7 +188,11 @@ func main() {
 		var s storage
 		s.init()
 		ast.Inspect(node["main"], funcStore.findFunctions)
-		analizeFunc(funcStore, s)
+		var ret funcReturns
+		ret.init()
+		ret.getReturns(funcStore)
+		// ret.printReturns()
+		analizeFunc(funcStore, s, ret)
 		s.printStore(fset)
 	}
 
