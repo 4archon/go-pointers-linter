@@ -17,13 +17,26 @@ func getType(node *ast.StarExpr) (string) {
 	return ""
 }
 
-func analizeValueSpec(node *ast.Ident, expr *ast.StarExpr, funcName string, store storage) {
+func analizeValueSpec(node *ast.Ident, expr *ast.StarExpr, funcName string, store storage, val string) {
 	name := node.Name
 	typeVar := getType(expr)
-	value := "nil"
+	value := val
 	pos := node.NamePos
 
 	store.addNewVar(funcName, name, typeVar, value, pos)
+}
+
+func analizeSpecValues(node *ast.Ident, expr ast.Expr, typeExpr *ast.StarExpr, funcName string, store storage) {
+	var value string
+	switch x := expr.(type) {
+	case *ast.UnaryExpr:
+		if x.Op.String() == "&" {
+			value = "valid"
+		}
+	case *ast.Ident:
+		value = store.getLastValue(funcName, x.Name)
+	}
+	analizeValueSpec(node, typeExpr, funcName, store, value)
 }
 
 func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage) {
@@ -34,12 +47,17 @@ func analizeDeclStmt(node *ast.GenDecl, funcName string, store storage) {
 				switch y := x.Type.(type) {
 				case *ast.StarExpr:
 					for _, j := range x.Names {
-						analizeValueSpec(j, y, funcName, store)
+						analizeValueSpec(j, y, funcName, store, "nil")
 					}
 				}
 			} else {
-				
 				//add assign stmt
+				switch y := x.Type.(type) {
+				case *ast.StarExpr:
+					for z, j := range x.Names {
+						analizeSpecValues(j, x.Values[z], y, funcName, store)
+					}
+				}
 			}
 		}
 	}
