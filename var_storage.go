@@ -40,6 +40,12 @@ func (store storage) getVarType(funcName string, name string) string {
 	return store[funcName][name].typeVar
 }
 
+func (store storage) getValueAndPosVarByIndex(funcName string, name string, index int) (string, token.Pos) {
+	value := store[funcName][name].listVar[index].value
+	pos := store[funcName][name].listVar[index].pos
+	return value, pos
+}
+
 func (store storage) addNewValue(funcName string, name string, value string, pos token.Pos) {
 	var s varStore
 	s.name = store[funcName][name].name
@@ -75,11 +81,15 @@ func (store storage) getLastFromDeref(funcName string, deref derefPointer, fset 
 		if valid == nil {
 			if cmp {
 				res := j -1
+				if res < 0 {
+					fmt.Println("error. deref before decl")
+				}
 				return res
 			}
 		}
 	}
-	return -1
+	res := store[funcName][deref.varName].last
+	return res
 }
 
 func (store storage) printStore(fset *token.FileSet) {
