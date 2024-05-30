@@ -49,9 +49,9 @@ func main() {
 
 		var deref derefPointerStorage
 		deref.init()
-		
+
 		getFuncStarIden(funcStore, deref, s)
-		deref.print(fset)
+		// deref.print(fset)
 
 
 	}

@@ -30,3 +30,19 @@ func tokenDir(scandir string, fset *token.FileSet) error {
 func getLine(fset *token.FileSet, pos token.Pos) int {
 	return fset.Position(pos).Line
 }
+
+func cmpPos(lPos token.Pos, rPos token.Pos, fset *token.FileSet) (bool ,error) {
+	lPosition := fset.Position(lPos)
+	rPosition := fset.Position(rPos)
+	if lPosition.Filename == rPosition.Filename {
+		lrow := lPosition.Line
+		rrow := rPosition.Line
+		if lrow < rrow {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	} else {
+		return false, errors.New("Not the same files")
+	}
+}

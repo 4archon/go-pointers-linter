@@ -68,11 +68,19 @@ func (store storage) addNewVar(funcName string, name string, typeVar string, val
 	store.addNewValue(funcName, name, value, pos)
 }
 
-// func (store storage) addFromAnother(nameTo string, nameFrom string, funcName string) {
-// 	store[funcName]
-// }
-
-// func (store storage) addExist ()
+func (store storage) getLastFromDeref(funcName string, deref derefPointer, fset *token.FileSet) int {
+	varChanges := store[funcName][deref.varName].listVar
+	for j, i := range(varChanges) {
+		cmp, valid := cmpPos(i.pos, deref.pos, fset)
+		if valid == nil {
+			if cmp {
+				res := j -1
+				return res
+			}
+		}
+	}
+	return -1
+}
 
 func (store storage) printStore(fset *token.FileSet) {
 	for funcName, i := range store {

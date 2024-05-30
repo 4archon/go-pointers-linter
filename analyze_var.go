@@ -179,7 +179,7 @@ func analyzeAssignStmt(node *ast.AssignStmt, funcName string, store storage, ret
 		}
 	}
 }
-
+//change to inspect decl and assign stmt
 func analyzeFuncBody(node *ast.BlockStmt, funcName string, store storage, ret funcReturns) {
 	store.init2lvl(funcName)
 	for _, i := range node.List {
