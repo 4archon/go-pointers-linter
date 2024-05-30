@@ -5,7 +5,9 @@ import "fmt"
 func foo() *int {
 	var j1 string = "ewqewq"
 	var j2 *string = nil
-	// j2 = &j1
+	j2 = &j1
+	j2 = nil
+	fmt.Println(*j2)
 	return nil
 }
 

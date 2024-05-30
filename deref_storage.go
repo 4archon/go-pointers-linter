@@ -27,12 +27,12 @@ func (store AstStarExprIden) print(fset *token.FileSet) {
 	}
 }
 
-func getFuncStarIden(funcStore funcStorage) {
-	var starIden AstStarExprIden
+func getFuncStarIden(funcStore funcStorage, storePointers derefPointerStorage, store storage) {
 	for _, i := range(funcStore) {
+		var starIden AstStarExprIden
 		funcName := i.Name.Name
 		ast.Inspect(i.Body, starIden.getAstStarIden)
-
+		storePointers.getDeref(funcName, starIden, store)
 	}
 }
 
@@ -47,6 +47,28 @@ func (store *derefPointerStorage) init() {
 	*store = make(derefPointerStorage)
 }
 
-func (store derefPointerStorage) getDeref(funcName string, idents AstStarExprIden) {
-	
+func (store derefPointerStorage) print(fset *token.FileSet) {
+	for k, i := range(store) {
+		fmt.Println(k)
+		fmt.Println("-------------")
+		for _, j := range(i) {
+			fmt.Println(j.varName)
+			fmt.Println(getLine(fset, j.pos))
+			fmt.Println("------")
+		}
+	}
+}
+
+func (storePointers derefPointerStorage) getDeref(funcName string, idents AstStarExprIden, store storage) {
+	var list []derefPointer
+	for _, i := range(idents) {
+		_, isValid := store[funcName][i.Name]
+		if isValid {
+			var deref derefPointer
+			deref.varName = i.Name
+			deref.pos = i.NamePos
+			list = append(list, deref)
+		}
+	}
+	storePointers[funcName] = list
 }

@@ -34,7 +34,11 @@ func analyzeSpecAndValues(node *ast.Ident, expr ast.Expr, typeExpr *ast.StarExpr
 			value = "valid"
 		}
 	case *ast.Ident:
-		value = store.getLastValue(funcName, x.Name)
+		if x.Name == "nil" {
+			value = "nil"
+		} else {
+			value = store.getLastValue(funcName, x.Name)
+		}
 	case *ast.CallExpr:
 		value = "func"
 	}
@@ -126,8 +130,12 @@ func analyzeAssignStmt(node *ast.AssignStmt, funcName string, store storage, ret
 		case *ast.Ident:
 			if node.Tok.String() == "=" {
 				if store[funcName][lVarName].typeVar[0] == '*' {
-					value := store.getLastValue(funcName, x.Name)
-					store.addNewValue(funcName, lVarName, value, lVarPos)
+					if x.Name == "nil" {
+						store.addNewValue(funcName, lVarName, "nil", lVarPos)
+					} else {
+						value := store.getLastValue(funcName, x.Name)
+						store.addNewValue(funcName, lVarName, value, lVarPos)
+					}
 				}
 			} else if node.Tok.String() == ":=" {
 				_, keyIsValid := store[funcName][rVarName]

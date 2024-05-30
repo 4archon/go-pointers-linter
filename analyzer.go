@@ -32,15 +32,27 @@ func main() {
 		ast.Fprint(os.Stdout, fset, node, nil)
 	} else if astPrint == "anl" {
 		var funcStore funcStorage
+
 		var s storage
 		s.init()
+
 		ast.Inspect(node["main"], funcStore.findFunctions)
+
 		var ret funcReturns
 		ret.init()
+
 		ret.getReturns(funcStore)
 		// ret.printReturns()
+
 		analyzeFunc(funcStore, s, ret)
 		// s.printStore(fset)
+
+		var deref derefPointerStorage
+		deref.init()
+		
+		getFuncStarIden(funcStore, deref, s)
+		deref.print(fset)
+
 
 	}
 

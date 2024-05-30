@@ -75,7 +75,9 @@ func (store storage) addNewVar(funcName string, name string, typeVar string, val
 // func (store storage) addExist ()
 
 func (store storage) printStore(fset *token.FileSet) {
-	for _, i := range store {
+	for funcName, i := range store {
+		fmt.Println(funcName)
+		fmt.Println("----------------------")
 		for _, j := range i {
 			for _, k := range j.listVar {
 				fmt.Println(j.name)
